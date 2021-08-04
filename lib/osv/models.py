@@ -142,6 +142,27 @@ class SourceOfTruth(enum.IntEnum):
   SOURCE_REPO = 2
 
 
+class Package(ndb.Model):
+  """Package."""
+  ecosystem = ndb.StringProperty()
+  name = ndb.StringProperty()
+  purl = ndb.StringProperty()
+
+
+class AffectedPackage(ndb.Model):
+  """Affected packages."""
+  # The affected package identifier.
+  package = ndb.StructuredProperty(Package)
+  # The list of affected ranges.
+  ranges = ndb.StructuredProperty(AffectedRange, repeated=True)
+  # The list of explicit affected versions.
+  versions = ndb.TextProperty(repeated=True)
+  # Database specific metadata.
+  database_specific = ndb.JsonProperty()
+  # Ecosystem specific metadata.
+  ecosystem_specific = ndb.JsonProperty()
+
+
 class Bug(ndb.Model):
   """Bug entity."""
   OSV_ID_PREFIX = 'OSV-'
@@ -171,16 +192,16 @@ class Bug(ndb.Model):
   fixed = ndb.StringProperty(default='')
   # The main regressing commit (from bisection).
   regressed = ndb.StringProperty(default='')
-  # All affected ranges.
+  # All affected ranges. TODO(ochang): To be removed.
   affected_ranges = ndb.StructuredProperty(AffectedRange, repeated=True)
-  # List of affected versions.
+  # List of affected versions. TODO(ochang): To be removed.
   affected = ndb.TextProperty(repeated=True)
   # List of normalized versions indexed for fuzzy matching.
   affected_fuzzy = ndb.StringProperty(repeated=True)
   # OSS-Fuzz issue ID.
   issue_id = ndb.StringProperty()
   # Package URL for this package.
-  purl = ndb.StringProperty()
+  purl = ndb.StringProperty(repeated=True)
   # Project/package name for the bug.
   project = ndb.StringProperty()
   # Package ecosystem for the project.
@@ -209,6 +230,9 @@ class Bug(ndb.Model):
   ecosystem_specific = ndb.JsonProperty()
   # Normalized SEMVER fixed indexes for querying.
   semver_fixed_indexes = ndb.StringProperty(repeated=True)
+  # Affected packages and versions.
+  affected_packages = ndb.LocalStructuredProperty(
+      AffectedPackage, repeated=True)
   # The source of this Bug.
   source = ndb.StringProperty()
 
@@ -226,9 +250,10 @@ class Bug(ndb.Model):
   @property
   def repo_url(self):
     """Repo URL."""
-    for affected_range in self.affected_ranges:
-      if affected_range.repo_url:
-        return affected_range.repo_url
+    for affected_package in self.affected_packages:
+      for affected_range in affected_package.ranges:
+        if affected_range.repo_url:
+          return affected_range.repo_url
 
     return None
 
@@ -258,28 +283,40 @@ class Bug(ndb.Model):
     search_indices = set()
 
     search_indices.update(self._tokenize(self.id()))
-    if self.project:
-      search_indices.update(self._tokenize(self.project))
 
-    if self.ecosystem:
+    if self.affected_packages:
+      self.project = self.affected_packages[0].package.name
+      self.ecosystem = self.affected_packages[0].package.ecosystem
+
+      search_indices.update(self._tokenize(self.project))
       search_indices.update(self._tokenize(self.ecosystem))
 
     self.search_indices = sorted(list(search_indices))
-    self.has_affected = bool(self.affected) or any(
-        r.type in ('SEMVER', 'ECOSYSTEM') for r in self.affected_ranges)
-    self.affected_fuzzy = bug.normalize_tags(self.affected)
+
+    self.affected_fuzzy = []
+    self.semver_fixed_indexes = []
+    self.has_affected = False
+    self.is_fixed = False
+
+    for affected_package in self.affected_packages:
+      # Indexes used for querying by exact version.
+      self.affected_fuzzy.extend(bug.normalize_tags(affected_package.versions))
+      self.has_affected |= bool(affected_package.versions)
+
+      for affected_range in affected_package.ranges:
+        if affected_range.type == 'SEMVER':
+          # Indexes used for querying by semver.
+          fixed = affected_range.fixed or self._NOT_FIXED_SEMVER
+          self.semver_fixed_indexes.append(semver_index.normalize(fixed))
+
+        # Index used to query by fixed/unfixed.
+        if affected_range.fixed:
+          self.is_fixed = True
+
+        self.has_affected |= (affected_range.type in ('SEMVER', 'ECOSYSTEM'))
 
     if not self.last_modified:
       self.last_modified = utcnow()
-
-    self.is_fixed = any(
-        affected_range.fixed for affected_range in self.affected_ranges)
-
-    self.semver_fixed_indexes = []
-    for affected_range in self.affected_ranges:
-      if affected_range.type == 'SEMVER':
-        fixed = affected_range.fixed or self._NOT_FIXED_SEMVER
-        self.semver_fixed_indexes.append(semver_index.normalize(fixed))
 
     if self.source_id:
       self.source, _ = sources.parse_source_id(self.source_id)
@@ -318,25 +355,33 @@ class Bug(ndb.Model):
     if vulnerability.HasField('withdrawn'):
       self.withdrawn = vulnerability.withdrawn.ToDatetime()
 
-    self.project = vulnerability.package.name
-    self.ecosystem = vulnerability.package.ecosystem
-    if vulnerability.package.purl:
-      self.purl = vulnerability.package.purl
+    if self.affected_packages:
+      affected_package = self.affected_packages[0]
+    else:
+      affected_package = AffectedPackage()
+      self.affected_packages.append(affected_package)
 
-    self.affected = list(vulnerability.affects.versions)
+    affected_package.package = Package(
+        name=vulnerability.package.name,
+        ecosystem=vulnerability.package.ecosystem)
+
+    if vulnerability.package.purl:
+      affected_package.package.purl = vulnerability.package.purl
+
     self.aliases = list(vulnerability.aliases)
     self.related = list(vulnerability.related)
 
     vuln_dict = sources.vulnerability_to_dict(vulnerability)
     if vulnerability.database_specific:
-      self.database_specific = vuln_dict['database_specific']
+      affected_package.database_specific = vuln_dict['database_specific']
 
     if vulnerability.ecosystem_specific:
-      self.ecosystem_specific = vuln_dict['ecosystem_specific']
+      affected_package.ecosystem_specific = vuln_dict['ecosystem_specific']
 
-    self.affected_ranges = []
+    affected_package.versions = list(vulnerability.affects.versions)
+    affected_package.ranges = []
     for affected_range in vulnerability.affects.ranges:
-      self.affected_ranges.append(
+      affected_package.ranges.append(
           AffectedRange(
               type=vulnerability_pb2.AffectedRange.Type.Name(
                   affected_range.type),
@@ -346,16 +391,32 @@ class Bug(ndb.Model):
 
   def to_vulnerability(self, include_source=False):
     """Convert to Vulnerability proto."""
-    package = vulnerability_pb2.Package(
-        name=self.project, ecosystem=self.ecosystem, purl=self.purl)
+    # Currently the schema only supports a single package, so we take the first.
+    package = None
+    ecosystem_specific = None
+    database_specific = None
 
-    affects = vulnerability_pb2.Affects(versions=self.affected)
-    for affected_range in self.affected_ranges:
-      affects.ranges.add(
-          type=vulnerability_pb2.AffectedRange.Type.Value(affected_range.type),
-          repo=affected_range.repo_url,
-          introduced=affected_range.introduced,
-          fixed=affected_range.fixed)
+    if self.affected_packages:
+      affected_package = self.affected_packages[0]
+
+      package = vulnerability_pb2.Package(
+          name=affected_package.package.name,
+          ecosystem=affected_package.package.ecosystem,
+          purl=affected_package.package.purl)
+
+      affects = vulnerability_pb2.Affects(versions=affected_package.versions)
+      for affected_range in affected_package.ranges:
+        affects.ranges.add(
+            type=vulnerability_pb2.AffectedRange.Type.Value(
+                affected_range.type),
+            repo=affected_range.repo_url,
+            introduced=affected_range.introduced,
+            fixed=affected_range.fixed)
+
+      if affected_package.ecosystem_specific:
+        ecosystem_specific = affected_package.ecosystem_specific
+      if affected_package.database_specific:
+        database_specific = affected_package.database_specific
 
     details = self.details
     if self.status == bug.BugStatus.INVALID:
@@ -397,10 +458,11 @@ class Bug(ndb.Model):
         affects=affects,
         references=references)
 
-    if self.ecosystem_specific:
-      result.ecosystem_specific.update(self.ecosystem_specific)
-    if self.database_specific:
-      result.database_specific.update(self.database_specific)
+    if ecosystem_specific:
+      result.ecosystem_specific.update(ecosystem_specific)
+
+    if database_specific:
+      result.database_specific.update(database_specific)
 
     if self.source and include_source:
       source_repo = get_source_repository(self.source)
