@@ -73,28 +73,32 @@ class ImporterTest(unittest.TestCase):
     """Test basic run."""
     osv.Bug(
         db_id='OSV-2017-134',
-        affected=['FILE5_29', 'FILE5_30'],
-        affected_fuzzy=['5-29', '5-30'],
-        affected_ranges=[{
-            'type': 'GIT',
-            'repo_url': 'https://github.com/file/file.git',
-            'introduced': '17ee4cf670c363de8d2ea4a4897d7a699837873f',
-            'fixed': '19ccebafb7663c422c714e0c67fa4775abf91c43',
+        affected_packages=[{
+            'versions': ['FILE5_29', 'FILE5_30'],
+            'ranges': [{
+              'type': 'GIT',
+              'repo_url': 'https://github.com/file/file.git',
+              'introduced': '17ee4cf670c363de8d2ea4a4897d7a699837873f',
+              'fixed': '19ccebafb7663c422c714e0c67fa4775abf91c43',
+            }],
+            'package': {
+                'ecosystem': 'OSS-Fuzz',
+                'name': 'file',
+            },
         }],
+        affected_fuzzy=['5-29', '5-30'],
         details=(
             'OSS-Fuzz report: '
             'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064\n\n'
             'Crash type: Heap-buffer-overflow READ 1\n'
             'Crash state:\ncdf_file_property_info\ncdf_file_summary_info\n'
             'cdf_check_summary_info\n'),
-        ecosystem='OSS-Fuzz',
         ecosystem_specific={
             'severity': 'MEDIUM',
         },
         fixed='19ccebafb7663c422c714e0c67fa4775abf91c43',
         has_affected=True,
         issue_id='1064',
-        project='file',
         public=True,
         reference_url_types={
             'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064':

@@ -83,8 +83,6 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer):
 
     if request.query.WhichOneof('param') == 'commit':
       bugs = query_by_commit(
-          package_name,
-          ecosystem,
           request.query.commit,
           to_response=bug_to_response)
     elif request.query.WhichOneof('param') == 'version':
@@ -124,17 +122,10 @@ def _get_bugs(bug_ids, to_response=bug_to_response):
   ]
 
 
-def query_by_commit(project, ecosystem, commit, to_response=bug_to_response):
+def query_by_commit(commit, to_response=bug_to_response):
   """Query by commit."""
   query = osv.AffectedCommit.query(osv.AffectedCommit.commit == commit,
                                    osv.AffectedCommit.public == True)  # pylint: disable=singleton-comparison
-
-  if project:
-    query = query.filter(osv.AffectedCommit.project == project)
-
-  if ecosystem:
-    query = query.filter(osv.AffectedCommit.ecosystem == ecosystem)
-
   bug_ids = []
   for affected_commit in query:
     bug_ids.append(affected_commit.bug_id)
