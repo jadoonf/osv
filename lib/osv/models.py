@@ -194,14 +194,15 @@ class Bug(ndb.Model):
   regressed = ndb.StringProperty(default='')
   # All affected ranges. TODO(ochang): To be removed.
   affected_ranges = ndb.StructuredProperty(AffectedRange, repeated=True)
-  # List of affected versions. TODO(ochang): To be removed.
+  # List of affected versions.
   affected = ndb.TextProperty(repeated=True)
   # List of normalized versions indexed for fuzzy matching.
   affected_fuzzy = ndb.StringProperty(repeated=True)
   # OSS-Fuzz issue ID.
   issue_id = ndb.StringProperty()
+  # TODO(ochang): Turn these into repeated properties.
   # Package URL for this package.
-  purl = ndb.StringProperty(repeated=True)
+  purl = ndb.StringProperty()
   # Project/package name for the bug.
   project = ndb.StringProperty()
   # Package ecosystem for the project.
