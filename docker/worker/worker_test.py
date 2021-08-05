@@ -335,7 +335,8 @@ class ImpactTest(unittest.TestCase):
                 'project',
             'public':
                 False,
-            'purl': None,
+            'purl':
+                None,
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
@@ -465,7 +466,8 @@ class ImpactTest(unittest.TestCase):
                 'project',
             'public':
                 False,
-            'purl': None,
+            'purl':
+                None,
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
@@ -1651,7 +1653,8 @@ class UpdateTest(unittest.TestCase):
                 'github.com/opencontainers/runc/libcontainer',
             'public':
                 True,
-            'purl': None,
+            'purl':
+                None,
             'reference_url_types': {
                 'https://github.com/opencontainers/runc/pull/2130':
                     'FIX',
@@ -1739,7 +1742,8 @@ class UpdateTest(unittest.TestCase):
                 'github.com/opencontainers/runc/libcontainer',
             'public':
                 True,
-            'purl': None,
+            'purl':
+                None,
             'reference_url_types': {
                 'https://github.com/opencontainers/runc/pull/2207':
                     'FIX',

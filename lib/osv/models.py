@@ -396,6 +396,7 @@ class Bug(ndb.Model):
     package = None
     ecosystem_specific = None
     database_specific = None
+    affects = None
 
     if self.affected_packages:
       affected_package = self.affected_packages[0]

@@ -131,21 +131,22 @@ def query_by_commit(commit, to_response=bug_to_response):
   return _get_bugs(bug_ids, to_response=to_response)
 
 
-def _is_semver_affected(affected_ranges, version):
+def _is_semver_affected(affected_packages, version):
   """Returns whether or not the given version is within an affected SEMVER
   range."""
   version = semver_index.parse(version)
 
-  for affected_range in affected_ranges:
-    if affected_range.type != 'SEMVER':
-      continue
+  for affected_package in affected_packages:
+    for affected_range in affected_package.ranges:
+      if affected_range.type != 'SEMVER':
+        continue
 
-    introduced = affected_range.introduced
-    fixed = affected_range.fixed
+      introduced = affected_range.introduced
+      fixed = affected_range.fixed
 
-    if ((not introduced or version >= semver_index.parse(introduced)) and
-        (not fixed or version < semver_index.parse(fixed))):
-      return True
+      if ((not introduced or version >= semver_index.parse(introduced)) and
+          (not fixed or version < semver_index.parse(fixed))):
+        return True
 
   return False
 
@@ -159,7 +160,7 @@ def _query_by_semver(query, version):
       osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
 
   return [
-      bug for bug in query if _is_semver_affected(bug.affected_ranges, version)
+      bug for bug in query if _is_semver_affected(bug.affected_packages, version)
   ]
 
 
