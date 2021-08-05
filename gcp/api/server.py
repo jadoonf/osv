@@ -160,7 +160,8 @@ def _query_by_semver(query, version):
       osv.Bug.semver_fixed_indexes > semver_index.normalize(version))
 
   return [
-      bug for bug in query if _is_semver_affected(bug.affected_packages, version)
+      bug for bug in query
+      if _is_semver_affected(bug.affected_packages, version)
   ]
 
 
