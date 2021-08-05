@@ -217,7 +217,7 @@ class ImpactTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'project',
             'public': False,
-            'purl': [],
+            'purl': None,
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
@@ -335,7 +335,7 @@ class ImpactTest(unittest.TestCase):
                 'project',
             'public':
                 False,
-            'purl': [],
+            'purl': None,
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
@@ -465,7 +465,7 @@ class ImpactTest(unittest.TestCase):
                 'project',
             'public':
                 False,
-            'purl': [],
+            'purl': None,
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
@@ -582,7 +582,7 @@ class ImpactTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'project',
             'public': False,
-            'purl': [],
+            'purl': None,
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
@@ -695,7 +695,7 @@ class ImpactTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'project',
             'public': False,
-            'purl': [],
+            'purl': None,
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
@@ -775,7 +775,7 @@ class ImpactTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'project',
             'public': False,
-            'purl': [],
+            'purl': None,
             'reference_url_types': {
                 'https://url/': 'WEB'
             },
@@ -1055,7 +1055,7 @@ class UpdateTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
             'public': True,
-            'purl': [],
+            'purl': None,
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
@@ -1158,7 +1158,7 @@ class UpdateTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
             'public': True,
-            'purl': [],
+            'purl': None,
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
@@ -1247,7 +1247,7 @@ class UpdateTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
             'public': True,
-            'purl': [],
+            'purl': None,
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
@@ -1348,7 +1348,7 @@ class UpdateTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'blah.com/package',
             'public': True,
-            'purl': [],
+            'purl': None,
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
@@ -1557,7 +1557,7 @@ class UpdateTest(unittest.TestCase):
             'last_modified': datetime.datetime(2021, 1, 1, 0, 0),
             'project': 'grpcio',
             'public': True,
-            'purl': [],
+            'purl': None,
             'reference_url_types': {
                 'https://ref.com/ref': 'WEB'
             },
@@ -1651,7 +1651,7 @@ class UpdateTest(unittest.TestCase):
                 'github.com/opencontainers/runc/libcontainer',
             'public':
                 True,
-            'purl': [],
+            'purl': None,
             'reference_url_types': {
                 'https://github.com/opencontainers/runc/pull/2130':
                     'FIX',
@@ -1739,7 +1739,7 @@ class UpdateTest(unittest.TestCase):
                 'github.com/opencontainers/runc/libcontainer',
             'public':
                 True,
-            'purl': [],
+            'purl': None,
             'reference_url_types': {
                 'https://github.com/opencontainers/runc/pull/2207':
                     'FIX',
